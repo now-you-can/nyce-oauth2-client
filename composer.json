@@ -1,0 +1,24 @@
+{
+  "name": "now-you-can/nyce-oauth2-client",
+  "description": "A Laravel package to integrate with an external OAuth2 server using league/oauth2-client",
+  "type": "library",
+  "require": {
+    "php": ">=7.4",
+    "league/oauth2-client": "^2.6"
+  },
+  "autoload": {
+    "psr-4": {
+      "NowYouCan\\NyceOAuth2\\Client\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "NowYouCan\\NyceOAuth2\\Client\\NyceOAuth2ClientServiceProvider"
+      ],
+      "aliases": {
+        "NyceOAuth2": "NowYouCan\\NyceOAuth2\\Client\\Facades\\NyceOAuth2"
+      }
+    }
+  }
+}
