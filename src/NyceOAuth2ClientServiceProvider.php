@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
 use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthContract;
 use NowYouCan\NyceOAuth2\Client\Services\OAuthClientService;
+use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
 use NowYouCan\NyceOAuth2\Client\Middleware\NyceOAuth2ClientMiddleware;
 
 
@@ -20,8 +21,17 @@ class NyceOauth2ClientServiceProvider extends ServiceProvider {
         $this->mergeConfigFrom(__DIR__ . '/../config/nyceoauth2client-config.php', 'nyceoauth2client');
 
         // Bind the OAuth2 provider as a singleton in the container.
-        $this->app->singleton (AuthContract::class, function($app) {
+        $this->app->singleton (AuthContract::class, function() {
             return new OAuthClientService (config('nyceoauth2client.oauth_generic_provider_details'));
+        });
+
+        // Bind a token object as well
+        $this->app->singleton (NyceAccessToken::class, function() {
+            $cookie_name = config('nyceoauth2client.cookie_name');
+            if (session()->has(config($cookie_name))) {
+                return config('nyceoauth2client.session_data')==='object' ? session()->get($cookie_name) : new NyceAccessToken(config($cookie_name));
+            }
+            return new NyceAccessToken();
         });
     }
 
