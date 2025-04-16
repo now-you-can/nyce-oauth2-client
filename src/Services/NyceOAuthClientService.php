@@ -5,7 +5,7 @@ namespace NowYouCan\NyceOAuth2\Client\Services;
 use NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider;
 use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthContract;
 
-class OAuthClientService implements AuthContract
+class NyceOAuthClientService implements AuthContract
 {
 
     protected $provider; // NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider
