@@ -4,7 +4,7 @@ namespace NowYouCan\NyceOAuth2\Client\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
-class NyceOAuth2Client extends Facade
+class NyceOAuth2ClientFacade extends Facade
 {
     protected static function getFacadeAccessor()
     {

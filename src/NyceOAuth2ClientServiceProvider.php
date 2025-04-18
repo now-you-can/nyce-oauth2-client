@@ -10,7 +10,7 @@ use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
 use NowYouCan\NyceOAuth2\Client\Middleware\NyceOAuth2ClientMiddleware;
 
 
-class NyceOauth2ClientServiceProvider extends ServiceProvider {
+class NyceOAuth2ClientServiceProvider extends ServiceProvider {
 
     /**
      * Register any application services.
@@ -27,9 +27,9 @@ class NyceOauth2ClientServiceProvider extends ServiceProvider {
 
         // Bind a token object as well
         $this->app->singleton (NyceAccessToken::class, function() {
-            $cookie_name = config('nyceoauth2client.cookie_name');
-            if (session()->has(config($cookie_name))) {
-                return config('nyceoauth2client.session_data')==='object' ? session()->get($cookie_name) : new NyceAccessToken(config($cookie_name));
+            $cookie_token = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
+            if (session()->has(config($cookie_token))) {
+                return config('nyceoauth2client.session_data')==='object' ? session()->get($cookie_token) : new NyceAccessToken(config($cookie_token));
             }
             return new NyceAccessToken();
         });

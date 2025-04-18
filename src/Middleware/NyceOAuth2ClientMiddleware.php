@@ -13,21 +13,21 @@ class NyceOAuth2ClientMiddleware
      */
     public function handle (Request $r, Closure $next)
     {
-        $cookie_name   = config('nyceoauth2client.cookie_name');
-        $token_request = 'nyceoauth.' . config('nyceoauth2client.routes.oauth2request');
-        $token_refresh = 'nyceoauth.' . config('nyceoauth2client.routes.oauth2refresh');
+        $cookie_token_name   = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
+        $token_request_route = 'nyceoauth.' . config('nyceoauth2client.routes.oauth2request');
+        $token_refresh_route = 'nyceoauth.' . config('nyceoauth2client.routes.oauth2refresh');
 
-        if (session()->has($cookie_name)) {
+        if (session()->has($cookie_token_name)) {
             $token = config('nyceoauth2client.session_data') == 'object'
-                ? session()->get($cookie_name)
-                : new NyceAccessToken (session()->get($cookie_name));
+                ? session()->get($cookie_token_name)
+                : new NyceAccessToken (session()->get($cookie_token_name));
             if ($token->hasExpired() && $token->refreshHasExpired()) {
-                return redirect()->route($token_request)->with('url.intended', url()->current());
+                return redirect()->route($token_request_route)->with('url.intended', url()->current());
             } elseif ($token->hasExpired() && !$token->refreshHasExpired()) {
-                return redirect()->route($token_refresh)->with('url.intended', url()->current());
+                return redirect()->route($token_refresh_route)->with('url.intended', url()->current());
             }
         } else {
-            return redirect()->route($token_request)->with('url.intended', url()->current());
+            return redirect()->route($token_request_route)->with('url.intended', url()->current());
         }
 
         return $next($r);

@@ -31,13 +31,17 @@ return [
         'urlAccessToken'          => env('NYCE_WEB_SVC_PROTOCOL') . env('NYCE_WEB_SVC_SERVER') . env('NYCE_TOKEN_REQUEST_PATH'),
         'urlResourceOwnerDetails' => env('NYCE_WEB_SVC_PROTOCOL') . env('NYCE_WEB_SVC_SERVER') . env('NYCE_RESOURCE_OWNER_PATH'),
     ],
-    'cookie_name' => 'NyceOAuth2',
-    'session_data' => 'object',  // object|values; denotes how data is saved to Laravel's session()
+
+    'cookie_namespace' => 'nyceoauth2client.',
+    'cookie_token'     => 'NyceOAuth2',
+    'session_data'     => 'object',  // object|values; denotes how data is saved to Laravel's session()
 
     'routes' => [
-        'oauth2fallback' => 'home',
-        'oauth2request'  => 'establishIfsAuth',
-        'oauth2refresh'  => 'refresnIfsAuth',
+        'oauth2fallback'      => 'home',
+        'oauth2request'       => 'establishIfsAuth',
+        'oauth2refresh'       => 'refresnIfsAuth',
+        'oauth2ownerlogin'    => 'oauth2ResourceOwnerLogin',
+        'oauth2ownerresponse' => 'oauth2ResourceOwnerResponse',
     ],
 
     'default_http_options' => [

@@ -14,10 +14,36 @@ class NyceOAuthClientService implements AuthContract
     public function __construct(array $config)
     {
         $this->provider = new NyceGenericProvider ($config);
-        $cookie_name   = config('nyceoauth2client.cookie_name');
-        if (session()->has($cookie_name)) {
-            $this->token = session()->get($cookie_name);
+        $cookie_token   = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
+        if (session()->has($cookie_token)) {
+            $this->token = session()->get($cookie_token);
         }
+    }
+
+    /**
+     * A function to redirect our user to the resource-owner's website so that
+     * they may log in with their credentials.  That site will send a response
+     * and a "code" that we'll consume in getAccessTokenByAuthCode().
+     */
+    public function sendUserToResourceOwner (array $options = []) {
+        $cookie_state = config('nyceoauth2client.cookie_namespace') . 'oauth2state';
+        $request_url  = $this->provider->getAuthorizationUrl ($options);
+        session()->put ($cookie_state, $this->provider->getState());
+        session()->put ('url.intended', url()->current());
+        return redirect($request_url);
+    }
+
+    /**
+     * Fetch the access token by the "code" which has been returned via the 
+     * given a the point of constructing the cl
+     *   @param  string $code
+     *   @param  array  $http_options
+     *   @param  bool   $save_to_session
+     *   @return void
+     */
+    public function getAccessTokenByAuthCode (string $code, array $http_options = [], bool $save_to_session = true) {
+        $this->token = $this->provider->getAccessToken ('authorization_code', ['code' => $code], $http_options);
+        $this->saveTokenToSession ($save_to_session);
     }
 
     /**
@@ -31,19 +57,6 @@ class NyceOAuthClientService implements AuthContract
      */
     public function getAccessTokenByClientCreds (array $http_options = [], bool $save_to_session = true) {
         $this->token = $this->provider->getAccessToken ('client_credentials', http_options: $http_options);
-        $this->saveTokenToSession ($save_to_session);
-    }
-
-    /**
-     * Fetch the access token by the "code" which has been returned via the 
-     * given a the point of constructing the cl
-     *   @param  string $code
-     *   @param  array  $http_options
-     *   @param  bool   $save_to_session
-     *   @return void
-     */
-    public function getAccessTokenByAuthCode (string $code, array $http_options = [], bool $save_to_session = true) {
-        $this->token = $this->provider->getAccessToken ('authorization_code', ['code' => $code], $http_options);
         $this->saveTokenToSession ($save_to_session);
     }
 
@@ -63,12 +76,12 @@ class NyceOAuthClientService implements AuthContract
      */
     public function saveTokenToSession (bool $save = true): void {
         if ($save) {
-            $save_as     = config('nyceoauth2client.session_data');
-            $cookie_name = config('nyceoauth2client.cookie_name');
+            $save_as           = config('nyceoauth2client.session_data');
+            $cookie_token_name = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
             if ($save_as == 'object') {
-                session()->put ($cookie_name, $this->token);
+                session()->put ($cookie_token_name, $this->token);
             } elseif ($save_as == 'values') {
-                session()->put ($cookie_name, [
+                session()->put ($cookie_token_name, [
                     'generated'       => $this->token->getGenerated(),
                     'access_token'    => $this->token->getToken(),
                     'expires'         => $this->token->getExpires(),
