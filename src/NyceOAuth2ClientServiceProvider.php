@@ -22,7 +22,10 @@ class NyceOAuth2ClientServiceProvider extends ServiceProvider {
 
         // Bind the OAuth2 provider as a singleton in the container.
         $this->app->singleton (AuthContract::class, function() {
-            return new NyceOAuthClientService (config('nyceoauth2client.oauth_generic_provider_details'));
+            return new NyceOAuthClientService (
+                config('nyceoauth2client.oauth_generic_provider_details'),
+                config('nyceoauth2client.default_http_options')
+            );
         });
 
         // Bind a token object as well

@@ -5,9 +5,9 @@ namespace NowYouCan\NyceOAuth2\Client\Services\Contracts;
 interface AuthContract {
 
     public function sendUserToResourceOwner (array $options = []);
-    public function getAccessTokenByClientCreds (array $http_options = [], bool $save_to_session = true);
-    public function getAccessTokenByAuthCode (string $code, array $http_options = [], bool $save_to_session = true);
-    public function getAccessTokenByRefresh (array $http_options = [], bool $save_to_session = true);
+    public function getAccessTokenByClientCreds (bool $save_to_session = true);
+    public function getAccessTokenByAuthCode (string $code, bool $save_to_session = true);
+    public function getAccessTokenByRefresh (bool $save_to_session = true);
 
     public function saveTokenToSession (bool $save = true): void;
     public function getToken(): string;

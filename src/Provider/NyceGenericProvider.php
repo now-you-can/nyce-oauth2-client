@@ -3,6 +3,7 @@
 namespace NowYouCan\NyceOAuth2\Client\Provider;
 
 use InvalidArgumentException;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
@@ -21,7 +22,7 @@ class NyceGenericProvider extends NyceAbstractProvider
     private ?array  $scopes = null;
     private string  $scopeSeparator;
     private string  $responseError = 'error';
-    private string  $responseCode;
+    private string  $responseCode = '';
     private string  $responseResourceOwnerId = 'id';
     private ?string $pkceMethod = null;
 
@@ -150,18 +151,18 @@ class NyceGenericProvider extends NyceAbstractProvider
             if (!is_string($error)) {
                 $error = var_export($error, true);
             }
-            $code  = $this->responseCode && !empty($data[$this->responseCode])? $data[$this->responseCode] : 0;
+            $code = $this->responseCode && !empty($data[$this->responseCode]) ? $data[$this->responseCode] : 0;
             if (!is_int($code)) {
                 $code = intval($code);
             }
-            throw new IdentityProviderException($error, $code, $data);
+            throw new IdentityProviderException ($error, $code, $data);
         }
     }
 
     /**
      * Implementation of the abstract function
      */
-    protected function createResourceOwner(array $response, AccessToken $token) {
+    protected function createResourceOwner (array $response, AccessToken $token) {
         return new GenericResourceOwner($response, $this->responseResourceOwnerId);
     }
 

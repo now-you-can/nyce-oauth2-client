@@ -36,8 +36,7 @@ class NyceOAuth2ClientController extends Controller {
         }
 
         try {
-            $http_options = config('nyceoauth2client.default_http_options');
-            $svc->getAccessTokenByAuthCode ($r->query('code'), $http_options);
+            $svc->getAccessTokenByAuthCode ($r->query('code'));
         } catch (IdentityProviderException $e) {
             return redirect('home')->with ('error', $e->getMessage());
         }
@@ -49,8 +48,7 @@ class NyceOAuth2ClientController extends Controller {
      */
     public function setupNyceOAuth2 (AuthContract $svc): RedirectResponse {
         try {
-            $http_options = config('nyceoauth2client.default_http_options');
-            $svc->getAccessTokenByClientCreds ($http_options);
+            $svc->getAccessTokenByClientCreds();
         } catch (IdentityProviderException $e) {
             return redirect('home')->with ('error', $e->getMessage());
         }
@@ -62,8 +60,7 @@ class NyceOAuth2ClientController extends Controller {
      */
     public function refreshNyceOAuth2 (AuthContract $svc): RedirectResponse {
         try {
-            $http_options = config('nyceoauth2client.default_http_options');
-            $svc->getAccessTokenByRefresh ($http_options);
+            $svc->getAccessTokenByRefresh();
         } catch (IdentityProviderException $e) {
             return redirect('home')->with ('error', $e->getMessage());
         }

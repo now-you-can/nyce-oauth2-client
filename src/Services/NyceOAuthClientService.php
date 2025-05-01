@@ -2,6 +2,7 @@
 
 namespace NowYouCan\NyceOAuth2\Client\Services;
 
+use GuzzleHttp\Client as HttpClient;
 use NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider;
 use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthContract;
 
@@ -11,10 +12,14 @@ class NyceOAuthClientService implements AuthContract
     protected $provider; // NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider
     protected $token;    // NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken
 
-    public function __construct(array $config)
+    public function __construct(array $config, array $http_options = [])
     {
-        $this->provider = new NyceGenericProvider ($config);
-        $cookie_token   = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
+        $collaborators = [];
+        if (!empty($http_options)) {
+            $collaborators['httpClient'] = new HttpClient($http_options);
+        }
+        $this->provider = new NyceGenericProvider ($config, $collaborators);
+        $cookie_token = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
         if (session()->has($cookie_token)) {
             $this->token = session()->get($cookie_token);
         }
@@ -41,8 +46,8 @@ class NyceOAuthClientService implements AuthContract
      *   @param  bool   $save_to_session
      *   @return void
      */
-    public function getAccessTokenByAuthCode (string $code, array $http_options = [], bool $save_to_session = true) {
-        $this->token = $this->provider->getAccessToken ('authorization_code', ['code' => $code], $http_options);
+    public function getAccessTokenByAuthCode (string $code, bool $save_to_session = true) {
+        $this->token = $this->provider->getAccessToken ('authorization_code', ['code' => $code]);
         $this->saveTokenToSession ($save_to_session);
     }
 
@@ -55,18 +60,18 @@ class NyceOAuthClientService implements AuthContract
      *   @param  bool $save_to_session
      *   @return void
      */
-    public function getAccessTokenByClientCreds (array $http_options = [], bool $save_to_session = true) {
-        $this->token = $this->provider->getAccessToken ('client_credentials', http_options: $http_options);
+    public function getAccessTokenByClientCreds (bool $save_to_session = true) {
+        $this->token = $this->provider->getAccessToken ('client_credentials');
         $this->saveTokenToSession ($save_to_session);
     }
 
     /**
      * Use the token's refresh token to re renew the access token
      */
-    public function getAccessTokenByRefresh (array $http_options = [], bool $save_to_session = true) {
+    public function getAccessTokenByRefresh (bool $save_to_session = true) {
         $this->token = $this->provider->getAccessToken ('refresh_token', [
             'refresh_token' => $this->token->getRefreshToken()
-        ], $http_options);
+        ]);
         $this->saveTokenToSession ($save_to_session);
     }
 
