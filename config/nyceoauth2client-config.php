@@ -26,7 +26,7 @@ return [
     'oauth_generic_provider_details' => [
         'clientId'                => env('NYCE_OAUTH2_CLIENT_ID'),
         'clientSecret'            => env('NYCE_OAUTH2_SECRET'),
-        'redirectUri'             => env('APP_URL'), // probably should be changed
+        'redirectUri'             => env('APP_URL') . '/nyceoauth/resource-owner-reply',
         'urlAuthorize'            => env('NYCE_WEB_SVC_PROTOCOL') . env('NYCE_WEB_SVC_SERVER') . env('NYCE_AUTH_PATH'),
         'urlAccessToken'          => env('NYCE_WEB_SVC_PROTOCOL') . env('NYCE_WEB_SVC_SERVER') . env('NYCE_TOKEN_REQUEST_PATH'),
         'urlResourceOwnerDetails' => env('NYCE_WEB_SVC_PROTOCOL') . env('NYCE_WEB_SVC_SERVER') . env('NYCE_RESOURCE_OWNER_PATH'),
