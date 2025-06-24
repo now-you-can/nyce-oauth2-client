@@ -2,10 +2,10 @@
 
 namespace NowYouCan\NyceOAuth2\Client;
 
+use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthManagerContract;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
-use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthContract;
-use NowYouCan\NyceOAuth2\Client\Services\NyceOAuthClientService;
+use NowYouCan\NyceOAuth2\Client\Services\NyceOAuthClientServicesManager;
 use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
 use NowYouCan\NyceOAuth2\Client\Middleware\NyceOAuth2ClientMiddleware;
 
@@ -20,22 +20,21 @@ class NyceOAuth2ClientServiceProvider extends ServiceProvider {
         // Merge default configuration
         $this->mergeConfigFrom(__DIR__ . '/../config/nyceoauth2client-config.php', 'nyceoauth2client');
 
-        // Bind the OAuth2 provider as a singleton in the container.
-        $this->app->singleton (AuthContract::class, function() {
-            return new NyceOAuthClientService (
-                config('nyceoauth2client.oauth_generic_provider_details'),
-                config('nyceoauth2client.default_http_options')
-            );
+        // Bind a single instance of NyceOAuthClientServicesManager.  It holds
+        // an instance of NyceOAuthClientService for each configured service
+        $this->app->singleton (AuthManagerContract::class, function () {
+            return new NyceOAuthClientServicesManager(config('nyceoauth2client.default_http_options'));
         });
 
-        // Bind a token object as well
-        $this->app->singleton (NyceAccessToken::class, function() {
-            $cookie_token = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
-            if (session()->has(config($cookie_token))) {
-                return config('nyceoauth2client.session_data')==='object' ? session()->get($cookie_token) : new NyceAccessToken(config($cookie_token));
-            }
-            return new NyceAccessToken();
-        });
+        // Bind the token objects as well
+        // Fetch by: app('nyceoauth.token.{$name}')
+        foreach (config('nyceoauth2client.connections') as $name => $config) {
+            $this->app->bind ("nyceoauth.token.{$name}", function() use ($name) {
+                $cookie_token = "nyceoauth2client.{$name}.token";
+                return session()->has($cookie_token) ?  session()->get($cookie_token) : new NyceAccessToken();
+            });
+        }
+
     }
 
     /**
