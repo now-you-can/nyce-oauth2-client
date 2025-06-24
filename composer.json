@@ -11,6 +11,11 @@
       "NowYouCan\\NyceOAuth2\\Client\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "NowYouCan\\NyceOAuth2\\Client\\Tests\\": "tests/"
+    }
+  },
   "extra": {
     "laravel": {
       "providers": [
@@ -20,5 +25,9 @@
         "NyceOAuth2": "NowYouCan\\NyceOAuth2\\Client\\Facades\\NyceOAuth2"
       }
     }
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.4",
+    "phpunit/phpunit": "^12.2"
   }
 }

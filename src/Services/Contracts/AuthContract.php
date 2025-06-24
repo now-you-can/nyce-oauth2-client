@@ -2,14 +2,18 @@
 
 namespace NowYouCan\NyceOAuth2\Client\Services\Contracts;
 
+use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
+use Illuminate\Http\RedirectResponse;
+
 interface AuthContract {
 
-    public function sendUserToResourceOwner (array $options = []);
-    public function getAccessTokenByClientCreds (bool $save_to_session = true);
-    public function getAccessTokenByAuthCode (string $code, bool $save_to_session = true);
-    public function getAccessTokenByRefresh (bool $save_to_session = true);
+    public function sendUserToResourceOwner (array $options = []): RedirectResponse;
+    public function getAccessTokenByClientCreds(): void;
+    public function getAccessTokenByAuthCode(string $code): void;
+    public function getAccessTokenByPassword (string $username, string $password): NyceAccessToken;
+    public function getAccessTokenByRefresh(): void;
 
-    public function saveTokenToSession (bool $save = true): void;
+    public function saveTokenToSession(): void;
     public function getToken(): string;
     public function getExpiration(): int;
     public function hasExpired(): bool;

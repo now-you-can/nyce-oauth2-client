@@ -5,33 +5,52 @@ namespace NowYouCan\NyceOAuth2\Client\Services;
 use GuzzleHttp\Client as HttpClient;
 use NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider;
 use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthContract;
+use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
+use Illuminate\Http\RedirectResponse;
 
 class NyceOAuthClientService implements AuthContract
 {
 
+    protected string $service_name;
     protected $provider; // NowYouCan\NyceOAuth2\Client\Provider\NyceGenericProvider
     protected $token;    // NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken
 
-    public function __construct(array $config, array $http_options = [])
+    /**
+     * The $config array format must be the same as is expected by PHPLeague's
+     * Generic Provider class.
+     *   @param array
+     *   @param array?
+     */
+    public function __construct (string $conn_name, array $config, array $http_options = [])
     {
+
+        $this->service_name = $conn_name;
+
         $collaborators = [];
         if (!empty($http_options)) {
             $collaborators['httpClient'] = new HttpClient($http_options);
         }
+
         $this->provider = new NyceGenericProvider ($config, $collaborators);
-        $cookie_token = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
+        $cookie_token = "nyceoauth2client.{$conn_name}.token";
         if (session()->has($cookie_token)) {
             $this->token = session()->get($cookie_token);
         }
+
     }
 
     /**
      * A function to redirect our user to the resource-owner's website so that
      * they may log in with their credentials.  That site will send a response
      * and a "code" that we'll consume in getAccessTokenByAuthCode().
+     * An alternate means of logging into a remote service is via the function
+     * getAuthorizationUrl() below.  However, this requires us to ask the user
+     * for their password at the resource owner, which requires their trust
+     *   @param  array $options   OAuth2 opions list
+     *   @return \Illuminate\Http\RedirectResponse
      */
-    public function sendUserToResourceOwner (array $options = []) {
-        $cookie_state = config('nyceoauth2client.cookie_namespace') . 'oauth2state';
+    public function sendUserToResourceOwner (array $options = []): RedirectResponse {
+        $cookie_state = 'nyceoauth2client.oauth2state';
         $request_url  = $this->provider->getAuthorizationUrl ($options);
         session()->put ($cookie_state, $this->provider->getState());
         session()->put ('url.intended', url()->current());
@@ -42,59 +61,56 @@ class NyceOAuthClientService implements AuthContract
      * Fetch the access token by the "code" which has been returned via the 
      * given a the point of constructing the cl
      *   @param  string $code
-     *   @param  array  $http_options
-     *   @param  bool   $save_to_session
      *   @return void
      */
-    public function getAccessTokenByAuthCode (string $code, bool $save_to_session = true) {
+    public function getAccessTokenByAuthCode (string $code): void {
         $this->token = $this->provider->getAccessToken ('authorization_code', ['code' => $code]);
-        $this->saveTokenToSession ($save_to_session);
+        $this->saveTokenToSession();
     }
 
     /**
      * Fetch the access token by the clientId and clientSecret, which were all
-     * given a the point of constructing the class.  Since we are to hold some
-     * more information in our token than what is supported by League, we have
-     * our own Token class, extending League\OAuth2\Client\Token\AccessToken.
-     *   @param  array $http_options
-     *   @param  bool $save_to_session
+     * given when constructing the class.  Because our token will be holding a
+     * little more information than League's version supports, we also need to
+     * extend League\OAuth2\Client\Token\AccessToken with our own Token class
      *   @return void
      */
-    public function getAccessTokenByClientCreds (bool $save_to_session = true) {
+    public function getAccessTokenByClientCreds(): void {
         $this->token = $this->provider->getAccessToken ('client_credentials');
-        $this->saveTokenToSession ($save_to_session);
+        $this->saveTokenToSession();
+    }
+
+    /**
+     * Fetch access token by username and password, which are the user's login
+     * details held by the resource-owner
+     *   @param string $userName
+     *   @param string $password
+     *   @return \NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken
+     */
+    public function getAccessTokenByPassword (string $username, string $password): NyceAccessToken {
+        $this->token = $this->provider->getAccessToken ('password', ['username' => $username, 'password' => $password]);
+        $this->saveTokenToSession();
+        return $this->token;
     }
 
     /**
      * Use the token's refresh token to re renew the access token
+     *   @return void
      */
-    public function getAccessTokenByRefresh (bool $save_to_session = true) {
+    public function getAccessTokenByRefresh(): void {
         $this->token = $this->provider->getAccessToken ('refresh_token', [
             'refresh_token' => $this->token->getRefreshToken()
         ]);
-        $this->saveTokenToSession ($save_to_session);
+        $this->saveTokenToSession();
     }
 
     /**
      * Save the token to the session
-     *   @param bool $save
+     *   @return void
      */
-    public function saveTokenToSession (bool $save = true): void {
-        if ($save) {
-            $save_as           = config('nyceoauth2client.session_data');
-            $cookie_token_name = config('nyceoauth2client.cookie_namespace') . config('nyceoauth2client.cookie_token');
-            if ($save_as == 'object') {
-                session()->put ($cookie_token_name, $this->token);
-            } elseif ($save_as == 'values') {
-                session()->put ($cookie_token_name, [
-                    'generated'       => $this->token->getGenerated(),
-                    'access_token'    => $this->token->getToken(),
-                    'expires'         => $this->token->getExpires(),
-                    'refresh_token'   => $this->token->getRefreshToken(),
-                    'refresh_expires' => $this->token->getRefreshExpires(),
-                ]);
-            }
-        }
+    public function saveTokenToSession(): void {
+        $cookie_token_name = "nyceoauth2client.{$this->service_name}.token";
+        session()->put ($cookie_token_name, $this->token);
     }
 
     /**

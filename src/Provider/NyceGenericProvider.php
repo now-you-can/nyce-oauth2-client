@@ -147,15 +147,20 @@ class NyceGenericProvider extends NyceAbstractProvider
     protected function checkResponse (ResponseInterface $response, $data)
     {
         if (!empty($data[$this->responseError])) {
-            $error = $data[$this->responseError];
-            if (!is_string($error)) {
-                $error = var_export($error, true);
+
+            if (empty($response->getStatusCode())) {
+                $error_code = $this->responseCode && !empty($data[$this->responseCode]) ? $data[$this->responseCode] : 0;
+            } else {
+                $error_code = $response->getStatusCode();
             }
-            $code = $this->responseCode && !empty($data[$this->responseCode]) ? $data[$this->responseCode] : 0;
-            if (!is_int($code)) {
-                $code = intval($code);
+            if (!is_int($error_code)) {
+                $error_code = intval($error_code);
             }
-            throw new IdentityProviderException ($error, $code, $data);
+
+            $error_message = $data['error_description'] ?? $data[$this->responseError];
+            $error_message = $response->getStatusCode() . ' ' . $response->getReasonPhrase() . ': ' . $error_message;
+
+            throw new IdentityProviderException ($error_message, $error_code, $data);
         }
     }
 
