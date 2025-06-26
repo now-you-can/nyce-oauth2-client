@@ -20,9 +20,10 @@ class NyceOAuth2ClientController extends Controller {
      *   @return \Illuminate\Http\RedirectResponse
      *   @throws \InvalidArgumentException;
      */
-    public function establishOAuthMethod (?string $svc_name): RedirectResponse {
+    public function establishOAuthMethod (?string $svc_name = null): RedirectResponse {
 
         session()->reflash(); // in particular, we need to keep url.intended
+        $svc_name = $svc_name ?? config ('nyceoauth2client.default');
         $method = config ("nyceoauth2client.connections.{$svc_name}.auth_type");
         $desired_redirect = 'nyceoauth.' . match (config("nyceoauth2client.connections.{$svc_name}.auth_type")) {
             'local-auth'  => 'resource-owner-pass',
@@ -41,7 +42,7 @@ class NyceOAuth2ClientController extends Controller {
     /**
      * Redirect the user to the resource owner's website for authentication
      */
-    public function oauth2ResourceOwnerUserLogin (AuthManagerContract $svcs, ?string $svc_name): RedirectResponse {
+    public function oauth2ResourceOwnerUserLogin (AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse {
         return $svcs->sendUserToResourceOwner($svc_name);
     }
 
@@ -54,7 +55,7 @@ class NyceOAuth2ClientController extends Controller {
      * This route expects to receive a `code` from the resource-owner, that we
      * shall use to exchange for the actual auth-token.
      */
-    public function catchResourceOwnerReply (Request $r, AuthManagerContract $svcs, ?string $svc_name): RedirectResponse {
+    public function catchResourceOwnerReply (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse {
 
         $cookie_state_name = "nyceoauth2client.{$svc_name}.oauth2state";
 
@@ -91,7 +92,7 @@ class NyceOAuth2ClientController extends Controller {
      * across the open internet, but when you're building in-house apps it can
      * be a seamless way to interact with external resources.
      */
-    public function oauth2ByClientCreds (AuthManagerContract $svcs, ?string $svc_name): RedirectResponse {
+    public function oauth2ByClientCreds (AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse {
         try {
             $svcs->getAccessTokenByClientCreds($svc_name);
         } catch (IdentityProviderException $e) {
@@ -106,7 +107,7 @@ class NyceOAuth2ClientController extends Controller {
      * behalf.  If they are kind enough to offer us their login credentials at
      * the resource-owner's site, then wen can obtain a token for them.
      */
-    public function oauth2ByPassword (Request $r, AuthManagerContract $svcs, ?string $svc_name): JsonResponse {
+    public function oauth2ByPassword (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): JsonResponse {
         try {
             $token = $svcs->getAccessTokenByPassword ($svc_name, $r->input('remoteuser'), $r->input('remotepw'));
         } catch (IdentityProviderException $e) {
