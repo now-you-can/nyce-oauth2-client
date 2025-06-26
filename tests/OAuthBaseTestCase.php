@@ -51,6 +51,7 @@ abstract class OAuthBaseTestCase extends BaseTestCase {
     }
 
     protected function getEnvironmentSetUp ($app) {
+        $app['config']->set('nyceoauth2client.default', 'local_conn');
         $app['config']->set('nyceoauth2client.connections', $this->getNyceTestConfig());
         $app['config']->set('nyceoauth2client.routes.oauth2fallback', 'home');
 

@@ -58,13 +58,24 @@ class TokenTest extends OAuthBaseTestCase
         }
     }
 
-    public function test_password_route_returns_token() {
+    public function test_pw_route_returns_token() {
         $svc_name = 'local_conn';
         $this->doBindings ('local_conn', config("nyceoauth2client.connections.local_conn"));
         $response = $this->post (route('nyceoauth.resource-owner-pass', [
             'remoteuser' => 'dummy_user',
             'remotepw'   => 'dummy_pw',
             'service_name' => $svc_name,
+        ]));
+        $response->assertStatus(200);
+        $response->assertSee('mock_access_token');
+        $response->assertSee('mock_refresh_token');
+    }
+
+    public function test_blank_slug_pw_route_returns_token() {
+        $this->doBindings ('local_conn', config("nyceoauth2client.connections.local_conn"));
+        $response = $this->post (route('nyceoauth.resource-owner-pass', [
+            'remoteuser' => 'dummy_user',
+            'remotepw'   => 'dummy_pw',
         ]));
         $response->assertStatus(200);
         $response->assertSee('mock_access_token');
