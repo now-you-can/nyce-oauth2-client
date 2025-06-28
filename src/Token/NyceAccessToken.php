@@ -103,6 +103,13 @@ class NyceAccessToken extends AccessToken
     }
 
     /**
+     * Quick access to check that the token has not yet expired
+     */
+    public function isActive() {
+        return !$this->hasExpired();
+    }
+
+    /**
      * Quick access to see if the refresh has expired
      */
     public function refreshHasExpired() {
@@ -111,6 +118,13 @@ class NyceAccessToken extends AccessToken
             throw new RuntimeException('"refresh expires" is not set on the token');
         }
         return $refresh_expires < $this->getTimeNow();
+    }
+
+    /**
+     * Quick access to see if the refresh token is unexpired
+     */
+    public function refreshIsActive() {
+        return !$this->refreshHasExpired();
     }
 
     /**

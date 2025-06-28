@@ -25,7 +25,7 @@ class NyceOAuth2ClientController extends Controller {
         session()->reflash(); // in particular, we need to keep url.intended
         $svc_name = $svc_name ?? config ('nyceoauth2client.default');
         $method = config ("nyceoauth2client.connections.{$svc_name}.auth_type");
-        $desired_redirect = 'nyceoauth.' . match (config("nyceoauth2client.connections.{$svc_name}.auth_type")) {
+        $desired_redirect = 'nyceoauth.' . match ($method) {
             'local-auth'  => 'resource-owner-pass',
             'remote-auth' => 'resource-owner-user-login',
             'client-id'   => 'resource-owner-client-creds',

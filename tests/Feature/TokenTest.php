@@ -1,7 +1,8 @@
 <?php
 
-namespace NowYouCan\NyceOAuth2\Client\Tests;
+namespace NowYouCan\NyceOAuth2\Client\Tests\Feature;
 
+use NowYouCan\NyceOAuth2\Client\Tests\OAuthBaseTestCase;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
