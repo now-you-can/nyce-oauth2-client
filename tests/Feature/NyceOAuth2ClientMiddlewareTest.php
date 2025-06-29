@@ -2,10 +2,11 @@
 
 namespace NowYouCan\NyceOAuth2\Client\Tests\Feature;
 
+use NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken;
 use NowYouCan\NyceOAuth2\Client\Tests\OAuthBaseTestCase;
 use Illuminate\Support\Facades\Session;
 
-class FakeOAuthToken {
+class FakeOAuthToken extends NyceAccessToken {
 
     private bool $isActive = false;
     private bool $refreshIsActive = false;
@@ -14,11 +15,6 @@ class FakeOAuthToken {
     public function __construct (array $flags) {
         foreach ($flags as $prop => $val) { $this->{$prop} = $val; }
     }
-    // public function setFlags(array $flags): void {
-    //     foreach ($flags as $prop => $val) {
-    //         $this->{$prop} = $val;
-    //     }
-    // }
     public function isActive(): bool { return $this->isActive; }
     public function refreshIsActive(): bool { return $this->refreshIsActive; }
     public function refreshHasExpired(): bool { return $this->refreshHasExpired; }

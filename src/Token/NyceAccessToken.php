@@ -35,15 +35,10 @@ class NyceAccessToken extends AccessToken
      *     in the access token request. The `access_token` option is required.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
      */
-    public function __construct(array $options = [])
-    {
+    public function __construct(array $options = []) {
 
-        $this->generated = empty($options['generated']) ? $this->getTimeNow() : $options['generated'];
-
-        if (empty($options['access_token'])) {
-            throw new InvalidArgumentException('Required option not passed: "access_token"');
-        }
-        $this->accessToken = $options['access_token'];
+        $this->generated   = empty($options['generated']) ? $this->getTimeNow() : $options['generated'];
+        $this->accessToken = empty($options['access_token']) ? '**unset**' : $options['access_token'];
 
         if (!empty($options['resource_owner_id'])) {
             $this->resourceOwnerId = $options['resource_owner_id'];
@@ -89,6 +84,13 @@ class NyceAccessToken extends AccessToken
     }
 
     /**
+     * Checker function to see if a token value has been assigned or not
+     */
+    public function isNotSet(): bool {
+        return $this->accessToken === '**unset**';
+    }
+
+    /**
      * Get the token generated time
      */
     public function getGenerated() {
@@ -103,19 +105,29 @@ class NyceAccessToken extends AccessToken
     }
 
     /**
+     * Override of the base function to avoid exception problems
+     */
+    public function hasExpired() {
+        return empty($this->expires) ? true : $this->expires < $this->getTimeNow();
+    }
+
+    /**
      * Quick access to check that the token has not yet expired
      */
-    public function isActive() {
+    public function isActive(): bool {
+        if (empty($this->getExpires())) {
+            return false;
+        }
         return !$this->hasExpired();
     }
 
     /**
      * Quick access to see if the refresh has expired
      */
-    public function refreshHasExpired() {
+    public function refreshHasExpired(): bool {
         $refresh_expires = $this->getRefreshExpires();
         if (empty($refresh_expires)) {
-            throw new RuntimeException('"refresh expires" is not set on the token');
+            throw new \RuntimeException ('"refresh expires" is not set on the token');
         }
         return $refresh_expires < $this->getTimeNow();
     }
@@ -123,8 +135,15 @@ class NyceAccessToken extends AccessToken
     /**
      * Quick access to see if the refresh token is unexpired
      */
-    public function refreshIsActive() {
+    public function refreshIsActive(): bool {
         return !$this->refreshHasExpired();
+    }
+
+    /**
+     * Shortcut to see if we should and are able to use the refresh token
+     */
+    public function shouldRefresh(): bool {
+        return $this->hasExpired() && $this->refreshIsActive();
     }
 
     /**

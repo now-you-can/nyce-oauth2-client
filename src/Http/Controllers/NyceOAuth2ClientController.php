@@ -106,6 +106,10 @@ class NyceOAuth2ClientController extends Controller {
      * Another way of obtaining an OAuth2 Token is to log in on our end-user's
      * behalf.  If they are kind enough to offer us their login credentials at
      * the resource-owner's site, then wen can obtain a token for them.
+     * 
+     * Note: The injected AuthManagerContract{} service has already loaded our
+     * token from the session.  getAccessTokenByPassword() is clever enough to
+     * check its validity before going to fetch a new one
      */
     public function oauth2ByPassword (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): JsonResponse {
         try {

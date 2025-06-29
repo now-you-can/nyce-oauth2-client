@@ -61,7 +61,7 @@ class TokenTest extends OAuthBaseTestCase
 
     public function test_pw_route_returns_token() {
         $svc_name = 'local_conn';
-        $this->doBindings ('local_conn', config("nyceoauth2client.connections.local_conn"));
+        $this->doBindings ($svc_name, config("nyceoauth2client.connections.{$svc_name}"));
         $response = $this->post (route('nyceoauth.resource-owner-pass', [
             'remoteuser' => 'dummy_user',
             'remotepw'   => 'dummy_pw',

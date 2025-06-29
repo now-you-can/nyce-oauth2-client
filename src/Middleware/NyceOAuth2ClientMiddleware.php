@@ -2,9 +2,10 @@
 
 namespace NowYouCan\NyceOAuth2\Client\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
+use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthManagerContract;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Closure;
 
 class NyceOAuth2ClientMiddleware
 {
@@ -45,8 +46,8 @@ class NyceOAuth2ClientMiddleware
      */
     public function handle (Request $r, Closure $next, ...$svc_names)
     {
-        $oauth_attempt_required = false;
         $svc_names = $svc_names ?: [config('nyceoauth2client.default')];
+        $svcs = app(AuthManagerContract::class);
 
         foreach ($svc_names as $svc_name) {
 
@@ -55,22 +56,13 @@ class NyceOAuth2ClientMiddleware
                     ->with('error', 'Remote resource connection details have not been configured.');
             }
 
-            $cookie_token_name = "nyceoauth2client.{$svc_name}.token";
-            if (session()->has($cookie_token_name)) {
-                $token = session()->get($cookie_token_name);
-                if ($token->isActive()) {
-                    continue;
-                } elseif ($token->refreshIsActive()) {
-                    return $this->redirectWithIntended ($svc_name, 'nyceoauth.auth-refresh');
-                } elseif ($token->refreshHasExpired()) {
-                    $oauth_attempt_required = true;
-                }
-            } else {
-                $oauth_attempt_required = true;
-            }
-
-            if ($oauth_attempt_required) {
+            $token = $svcs->getTokenObj ($svc_name);
+            if ($token->isActive()) {
+                continue;
+            } elseif ($token->isNotSet() || ($token->hasExpired() && $token->refreshHasExpired())) {
                 return $this->redirectWithIntended ($svc_name, $this->getOAuthMethodRoute($svc_name));
+            } elseif ($token->refreshIsActive()) {
+                return $this->redirectWithIntended ($svc_name, 'nyceoauth.auth-refresh');
             }
         }
 

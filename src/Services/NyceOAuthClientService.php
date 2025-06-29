@@ -18,13 +18,14 @@ class NyceOAuthClientService implements AuthContract
     /**
      * The $config array format must be the same as is expected by PHPLeague's
      * Generic Provider class.
+     *   @param string
      *   @param array
      *   @param array?
      */
-    public function __construct (string $conn_name, array $config, array $http_options = [])
+    public function __construct (string $svc_name, array $config, array $http_options = [])
     {
 
-        $this->service_name = $conn_name;
+        $this->service_name = $svc_name;
 
         $collaborators = [];
         if (!empty($http_options)) {
@@ -32,10 +33,7 @@ class NyceOAuthClientService implements AuthContract
         }
 
         $this->provider = new NyceGenericProvider ($config, $collaborators);
-        $cookie_token = "nyceoauth2client.{$conn_name}.token";
-        if (session()->has($cookie_token)) {
-            $this->token = session()->get($cookie_token);
-        }
+        $this->token    = session()->get ("nyceoauth2client.{$svc_name}.token", new NyceAccessToken());
 
     }
 
@@ -95,13 +93,14 @@ class NyceOAuthClientService implements AuthContract
 
     /**
      * Use the token's refresh token to re renew the access token
-     *   @return void
+     *   @return \NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken
      */
-    public function getAccessTokenByRefresh(): void {
+    public function getAccessTokenByRefresh(): NyceAccessToken {
         $this->token = $this->provider->getAccessToken ('refresh_token', [
             'refresh_token' => $this->token->getRefreshToken()
         ]);
         $this->saveTokenToSession();
+        return $this->token;
     }
 
     /**
@@ -113,6 +112,12 @@ class NyceOAuthClientService implements AuthContract
         session()->put ($cookie_token_name, $this->token);
     }
 
+    /**
+     * Get the token object (as opposed to the actual token string)
+     */
+    public function getTokenObj(): NyceAccessToken {
+        return $this->token;
+    }
     /**
      * Get the actual token in all its random character glory
      */
@@ -150,6 +155,13 @@ class NyceOAuthClientService implements AuthContract
      */
     public function refreshHasExpired(): bool {
         return $this->token->refreshHasExpired();
+    }
+    /**
+     * Get boolean to denote whether the refresh can and should be used
+     *   @return bool
+     */
+    public function tokenShouldRefresh(): bool {
+        return $this->token->shouldRefresh();
     }
 
 }
