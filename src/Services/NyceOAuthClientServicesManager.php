@@ -49,17 +49,18 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
     }
 
     public function getAccessTokenByClientCreds (?string $svc_name): NyceAccessToken {
-        return $this->getService($svc_name)->getAccessTokenByClientCreds();
-    }
-
-    public function getAccessTokenByAuthCode (?string $svc_name, string $code): void {
         $svc = $this->getService ($svc_name);
         $token = $svc->getTokenObj();
         if ($token->isNotSet() || ($token->hasExpired() && $token->refreshHasExpired())) {
-            $svc->getAccessTokenByAuthCode();
+            $token = $svc->getAccessTokenByClientCreds();
         } elseif ($token->shouldRefresh()) {
-            $svc->getAccessTokenByRefresh();
+            $token = $svc->getAccessTokenByRefresh();
         }
+        return $token;
+    }
+
+    public function getAccessTokenByAuthCode (?string $svc_name, string $code): void {
+        $this->getService($svc_name)->getAccessTokenByAuthCode();
     }
 
     public function getAccessTokenByPassword (?string $svc_name, string $username, string $password): NyceAccessToken {
