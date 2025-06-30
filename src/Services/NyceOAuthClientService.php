@@ -71,11 +71,12 @@ class NyceOAuthClientService implements AuthContract
      * given when constructing the class.  Because our token will be holding a
      * little more information than League's version supports, we also need to
      * extend League\OAuth2\Client\Token\AccessToken with our own Token class
-     *   @return void
+     *   @return \NowYouCan\NyceOAuth2\Client\Token\NyceAccessToken
      */
-    public function getAccessTokenByClientCreds(): void {
+    public function getAccessTokenByClientCreds(): NyceAccessToken {
         $this->token = $this->provider->getAccessToken ('client_credentials');
         $this->saveTokenToSession();
+        return $this->token;
     }
 
     /**

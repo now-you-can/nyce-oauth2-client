@@ -48,8 +48,8 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
         return $this->getService($svc_name)->sendUserToResourceOwner($options);
     }
 
-    public function getAccessTokenByClientCreds (?string $svc_name): void {
-        $this->getService($svc_name)->getAccessTokenByClientCreds();
+    public function getAccessTokenByClientCreds (?string $svc_name): NyceAccessToken {
+        return $this->getService($svc_name)->getAccessTokenByClientCreds();
     }
 
     public function getAccessTokenByAuthCode (?string $svc_name, string $code): void {

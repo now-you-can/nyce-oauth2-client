@@ -92,14 +92,31 @@ class NyceOAuth2ClientController extends Controller {
      * across the open internet, but when you're building in-house apps it can
      * be a seamless way to interact with external resources.
      */
-    public function oauth2ByClientCreds (AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse {
+    public function oauth2ByClientCreds (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse|JsonResponse {
         try {
-            $svcs->getAccessTokenByClientCreds($svc_name);
+            $token = $svcs->getAccessTokenByClientCreds($svc_name);
         } catch (IdentityProviderException $e) {
-            return redirect(route(config('nyceoauth2client.routes.oauth2fallback')))
-                ->with ('error', $e->getMessage());
+            if ($r->wantsJson()) {
+                return response()->json ([
+                    'success'    => false,
+                    'error_type' => 'Identity Provider',
+                    'error_msg'  => $e->getMessage(),
+                ], Response::HTTP_UNAUTHORIZED);
+            } else {
+                return redirect(route(config('nyceoauth2client.routes.oauth2fallback')))
+                    ->with ('error', $e->getMessage());
+            }
         }
-        return redirect()->intended(route(config('nyceoauth2client.routes.oauth2fallback')));
+        return $r->wantsJson()
+            ?  response()->json([
+                'success'         => true,
+                'access_token'    => $token->getToken(),
+                'creaated_at'     => $token->getGenerated(),
+                'expires'         => $token->getExpires(),
+                'refresh_token'   => $token->getRefreshToken(),
+                'refresh_expires' => $token->getRefreshExpires(),
+            ])
+            : redirect()->intended(route(config('nyceoauth2client.routes.oauth2fallback')));
     }
 
     /**

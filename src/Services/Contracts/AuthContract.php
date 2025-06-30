@@ -8,7 +8,7 @@ use Illuminate\Http\RedirectResponse;
 interface AuthContract {
 
     public function sendUserToResourceOwner (array $options = []): RedirectResponse;
-    public function getAccessTokenByClientCreds(): void;
+    public function getAccessTokenByClientCreds(): NyceAccessToken;
     public function getAccessTokenByAuthCode(string $code): void;
     public function getAccessTokenByPassword (string $username, string $password): NyceAccessToken;
     public function getAccessTokenByRefresh(): NyceAccessToken;

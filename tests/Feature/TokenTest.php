@@ -101,6 +101,17 @@ class TokenTest extends OAuthBaseTestCase
         $this->assertFalse (session()->has('error'));
     }
 
+    public function test_client_credentials_route_returns_json() {
+        $svc_name = 'clientid_conn';
+        $this->doBindings($svc_name, config("nyceoauth2client.connections.$svc_name"));
+        $response = $this->getJson(route('nyceoauth.resource-owner-client-creds', ['service_name' => $svc_name]));
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success', 'access_token', 'creaated_at', 'expires', 'refresh_token', 'refresh_expires',
+        ]);
+        $response->assertJson(['success' => true]);
+    }
+
     public function test_token_refresh_redirects() {
         $svc_name = 'clientid_conn';
         session()->put("nyceoauth2client.{$svc_name}.token", new NyceAccessToken([
