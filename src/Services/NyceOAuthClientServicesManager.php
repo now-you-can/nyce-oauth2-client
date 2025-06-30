@@ -13,13 +13,9 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
     protected array $services = []; // array<NowYouCan\NyceOAuth2\Client\Services\NyceOAuthClientService>
 
     public function __construct (array $http_options = []) {
-
-        $connections = config('nyceoauth2client.connections');
-
-        foreach ($connections as $svc_name => $configs) {
+        foreach (config('nyceoauth2client.connections') as $svc_name => $configs) {
             $this->services[$svc_name] = new NyceOAuthClientService ($svc_name, $configs['oauth_generic_provider_details'], $http_options);
         }
-
     }
 
     public function getService (?string $service_name = null): NyceOAuthClientService {
@@ -52,8 +48,15 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
         return $this->getService($svc_name)->sendUserToResourceOwner($options);
     }
 
-    public function getAccessTokenByClientCreds (?string $svc_name): void {
-        $this->getService($svc_name)->getAccessTokenByClientCreds();
+    public function getAccessTokenByClientCreds (?string $svc_name): NyceAccessToken {
+        $svc = $this->getService ($svc_name);
+        $token = $svc->getTokenObj();
+        if ($token->isNotSet() || ($token->hasExpired() && $token->refreshHasExpired())) {
+            $token = $svc->getAccessTokenByClientCreds();
+        } elseif ($token->shouldRefresh()) {
+            $token = $svc->getAccessTokenByRefresh();
+        }
+        return $token;
     }
 
     public function getAccessTokenByAuthCode (?string $svc_name, string $code): void {
@@ -61,14 +64,27 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
     }
 
     public function getAccessTokenByPassword (?string $svc_name, string $username, string $password): NyceAccessToken {
-        return $this->getService($svc_name)->getAccessTokenByPassword ($username, $password);
+        $svc = $this->getService ($svc_name);
+        $token = $svc->getTokenObj();
+        if ($token->isNotSet() || ($token->hasExpired() && $token->refreshHasExpired())) {
+            $token = $svc->getAccessTokenByPassword ($username, $password);
+        } elseif ($token->shouldRefresh()) {
+            $token = $svc->getAccessTokenByRefresh();
+        }
+        return $token; // $token->isActive() should be true
     }
 
-    public function getAccessTokenByRefresh (?string $svc_name): void {
-        $this->getService($svc_name)->getAccessTokenByRefresh();
+    public function getAccessTokenByRefresh (?string $svc_name): NyceAccessToken {
+        return $this->getService($svc_name)->getAccessTokenByRefresh();
     }
 
 
+    public function getTokenObj (?string $svc_name): NyceAccessToken {
+        return $this->getService($svc_name)->getTokenObj();
+    }
+    public function tokenIsNotSet (?string $svc_name): bool {
+        return $this->getTokenObj($svc_name)->isNotSet();
+    }
     public function getToken (?string $svc_name): string {
         return $this->getService($svc_name)->getToken();
     }
@@ -87,6 +103,8 @@ class NyceOAuthClientServicesManager implements AuthManagerContract {
     public function refreshHasExpired (?string $svc_name): bool {
         return $this->getService($svc_name)->refreshHasExpired();
     }
-
+    public function tokenShouldRefresh (?string $svc_name): bool {
+        return $this->getService($svc_name)->tokenShouldRefresh();
+    }
 
 }

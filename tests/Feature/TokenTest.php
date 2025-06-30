@@ -1,7 +1,8 @@
 <?php
 
-namespace NowYouCan\NyceOAuth2\Client\Tests;
+namespace NowYouCan\NyceOAuth2\Client\Tests\Feature;
 
+use NowYouCan\NyceOAuth2\Client\Tests\OAuthBaseTestCase;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
@@ -60,7 +61,7 @@ class TokenTest extends OAuthBaseTestCase
 
     public function test_pw_route_returns_token() {
         $svc_name = 'local_conn';
-        $this->doBindings ('local_conn', config("nyceoauth2client.connections.local_conn"));
+        $this->doBindings ($svc_name, config("nyceoauth2client.connections.{$svc_name}"));
         $response = $this->post (route('nyceoauth.resource-owner-pass', [
             'remoteuser' => 'dummy_user',
             'remotepw'   => 'dummy_pw',
@@ -98,6 +99,17 @@ class TokenTest extends OAuthBaseTestCase
         $response->assertStatus(302);
         $response->assertRedirectToRoute (config('nyceoauth2client.routes.oauth2fallback'));
         $this->assertFalse (session()->has('error'));
+    }
+
+    public function test_client_credentials_route_returns_json() {
+        $svc_name = 'clientid_conn';
+        $this->doBindings($svc_name, config("nyceoauth2client.connections.$svc_name"));
+        $response = $this->getJson(route('nyceoauth.resource-owner-client-creds', ['service_name' => $svc_name]));
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'success', 'access_token', 'creaated_at', 'expires', 'refresh_token', 'refresh_expires',
+        ]);
+        $response->assertJson(['success' => true]);
     }
 
     public function test_token_refresh_redirects() {

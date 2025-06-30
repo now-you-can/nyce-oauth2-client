@@ -2,10 +2,10 @@
 
 namespace NowYouCan\NyceOAuth2\Client\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
+use NowYouCan\NyceOAuth2\Client\Services\Contracts\AuthManagerContract;
 use Illuminate\Http\RedirectResponse;
-use InvalidArgumentException;
+use Illuminate\Http\Request;
+use Closure;
 
 class NyceOAuth2ClientMiddleware
 {
@@ -22,13 +22,12 @@ class NyceOAuth2ClientMiddleware
     }
 
     /**
-     * This function 
-     * settings.  Given the service name, we can access that config
+     * An approximate copy of function establishOAuthMethod() in the extension
+     * Controller.  This function saves us a redirect.
      *   @param $svc_name
-     *   @return \Illuminate\Http\RedirectResponse
-     *   @throws \InvalidArgumentException;
+     *   @return string|\Illuminate\Http\RedirectResponse
      */
-    public function establishOAuthMethod (?string $svc_name): RedirectResponse {
+    public function getOAuthMethodRoute (string $svc_name): string|RedirectResponse {
         $desired_redirect = 'nyceoauth.' . match (config("nyceoauth2client.connections.{$svc_name}.auth_type")) {
             'local-auth'  => 'resource-owner-pass',
             'remote-auth' => 'resource-owner-user-login',
@@ -36,9 +35,10 @@ class NyceOAuth2ClientMiddleware
             default       => '**error**',
         };
         if ($desired_redirect === '**error**') {
-            throw new InvalidArgumentException("OAuth method [{$method}] is not defined in service [{$svc_name}].");
+            return redirect()->route(config('nyceoauth2client.routes.oauth2fallback'))
+                ->with('error', 'Error trying to establish remote resource details.');
         }
-        return $this->redirectWithIntended ($svc_name, $desired_redirect);
+        return $desired_redirect;
     }
 
     /**
@@ -46,34 +46,24 @@ class NyceOAuth2ClientMiddleware
      */
     public function handle (Request $r, Closure $next, ...$svc_names)
     {
-        $svc_names   = $svc_names ?: [config('nyceoauth2client.default')];
-        $svc_configs = config('nyceoauth2client.connections');
+        $svc_names = $svc_names ?: [config('nyceoauth2client.default')];
+        $svcs = app(AuthManagerContract::class);
 
         foreach ($svc_names as $svc_name) {
 
-            if (!array_key_exists($svc_name, $svc_configs)) {
-                abort (403, 'Authorised connection to remote resource not established.');
+            if (!array_key_exists($svc_name, config('nyceoauth2client.connections'))) {
+                return redirect()->route(config('nyceoauth2client.routes.oauth2fallback'))
+                    ->with('error', 'Remote resource connection details have not been configured.');
             }
 
-            $cookie_token_name = "nyceoauth2client.{$svc_name}.token";
-            if (session()->has($cookie_token_name)) {
-                // A valid token was found, so now we have to work out whether
-                // it has expired, and if so, how to refresh it
-                $token = session()->get($cookie_token_name);
-                if ($token->hasExpired() && $token->refreshHasExpired()) {
-                    return $this->redirectWithIntended ($svc_name, 'nyceoauth.establish-remote-auth');
-                } elseif ($token->hasExpired() && !$token->refreshHasExpired()) {
-                    return $this->redirectWithIntended ($svc_name, 'nyceoauth.auth-refresh');
-                }
-            } else {
-                // establish-remote-auth route checks the configuration of the
-                // $svc_name and again redirects to the correct authentication
-                // method accordingly.
-                return $this->redirectWithIntended ($svc_name, 'nyceoauth.establish-remote-auth');
+            $token = $svcs->getTokenObj ($svc_name);
+            if ($token->isActive()) {
+                continue;
+            } elseif ($token->isNotSet() || ($token->hasExpired() && $token->refreshHasExpired())) {
+                return $this->redirectWithIntended ($svc_name, $this->getOAuthMethodRoute($svc_name));
+            } elseif ($token->refreshIsActive()) {
+                return $this->redirectWithIntended ($svc_name, 'nyceoauth.auth-refresh');
             }
-
-            return redirect()->route(config('nyceoauth2client.routes.oauth2fallback'))->with('error', 'Unable to establish remote authentication.');
-
         }
 
         return $next($r);

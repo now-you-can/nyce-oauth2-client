@@ -3,6 +3,7 @@
 namespace NowYouCan\NyceOAuth2\Client\Tests;
 
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use NowYouCan\NyceOAuth2\Client\Middleware\NyceOAuth2ClientMiddleware;
 
 abstract class OAuthBaseTestCase extends BaseTestCase {
 
@@ -76,6 +77,10 @@ abstract class OAuthBaseTestCase extends BaseTestCase {
             'as'   => 'nyceoauth.auth-refresh',
         ]);
         $app['router']->get('home', ['as' => 'home', 'uses' => fn() => response('Dummy response')]);
+
+        $app['router']->get('protected', function() {
+            return 'protected content';
+        })->middleware('web', NyceOAuth2ClientMiddleware::class);
 
     }
 }

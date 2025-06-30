@@ -25,7 +25,7 @@ class NyceOAuth2ClientController extends Controller {
         session()->reflash(); // in particular, we need to keep url.intended
         $svc_name = $svc_name ?? config ('nyceoauth2client.default');
         $method = config ("nyceoauth2client.connections.{$svc_name}.auth_type");
-        $desired_redirect = 'nyceoauth.' . match (config("nyceoauth2client.connections.{$svc_name}.auth_type")) {
+        $desired_redirect = 'nyceoauth.' . match ($method) {
             'local-auth'  => 'resource-owner-pass',
             'remote-auth' => 'resource-owner-user-login',
             'client-id'   => 'resource-owner-client-creds',
@@ -92,20 +92,41 @@ class NyceOAuth2ClientController extends Controller {
      * across the open internet, but when you're building in-house apps it can
      * be a seamless way to interact with external resources.
      */
-    public function oauth2ByClientCreds (AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse {
+    public function oauth2ByClientCreds (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): RedirectResponse|JsonResponse {
         try {
-            $svcs->getAccessTokenByClientCreds($svc_name);
+            $token = $svcs->getAccessTokenByClientCreds($svc_name);
         } catch (IdentityProviderException $e) {
-            return redirect(route(config('nyceoauth2client.routes.oauth2fallback')))
-                ->with ('error', $e->getMessage());
+            if ($r->wantsJson()) {
+                return response()->json ([
+                    'success'    => false,
+                    'error_type' => 'Identity Provider',
+                    'error_msg'  => $e->getMessage(),
+                ], Response::HTTP_UNAUTHORIZED);
+            } else {
+                return redirect(route(config('nyceoauth2client.routes.oauth2fallback')))
+                    ->with ('error', $e->getMessage());
+            }
         }
-        return redirect()->intended(route(config('nyceoauth2client.routes.oauth2fallback')));
+        return $r->wantsJson()
+            ?  response()->json([
+                'success'         => true,
+                'access_token'    => $token->getToken(),
+                'creaated_at'     => $token->getGenerated(),
+                'expires'         => $token->getExpires(),
+                'refresh_token'   => $token->getRefreshToken(),
+                'refresh_expires' => $token->getRefreshExpires(),
+            ])
+            : redirect()->intended(route(config('nyceoauth2client.routes.oauth2fallback')));
     }
 
     /**
      * Another way of obtaining an OAuth2 Token is to log in on our end-user's
      * behalf.  If they are kind enough to offer us their login credentials at
      * the resource-owner's site, then wen can obtain a token for them.
+     * 
+     * Note: The injected AuthManagerContract{} service has already loaded our
+     * token from the session.  getAccessTokenByPassword() is clever enough to
+     * check its validity before going to fetch a new one
      */
     public function oauth2ByPassword (Request $r, AuthManagerContract $svcs, ?string $svc_name = null): JsonResponse {
         try {
